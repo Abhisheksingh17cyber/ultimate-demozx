@@ -1,6 +1,7 @@
 /* ============================================
    INTERNITY — ANIMATIONS & INTERACTIONS
    GSAP + ScrollTrigger + Lenis
+   Smooth / Premium Edition
    ============================================ */
 
 (function () {
@@ -8,16 +9,14 @@
 
     // ========== LENIS SMOOTH SCROLL ==========
     const lenis = new Lenis({
-        duration: 1.4,
+        duration: 1.8,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smooth: true,
+        smoothWheel: true,
+        wheelMultiplier: 0.8,
+        touchMultiplier: 1.5,
+        infinite: false,
     });
-
-    function raf(time) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
 
     // Connect Lenis to GSAP ScrollTrigger
     gsap.registerPlugin(ScrollTrigger);
@@ -32,7 +31,10 @@
     // ========== PRELOADER ==========
     const preloaderTl = gsap.timeline({
         onComplete: () => {
-            document.getElementById('preloader').style.display = 'none';
+            gsap.to('#preloader', {
+                display: 'none',
+                duration: 0
+            });
             document.body.style.overflow = '';
             initScrollAnimations();
         }
@@ -42,50 +44,50 @@
     preloaderTl.to('.preloader-text span', {
         opacity: 1,
         y: 0,
-        duration: 0.6,
-        stagger: 0.08,
-        ease: 'power3.out',
+        duration: 0.7,
+        stagger: 0.07,
+        ease: 'power4.out',
     });
 
     // Animate progress line
     preloaderTl.to('.preloader-line', {
-        width: '120px',
-        duration: 0.8,
-        ease: 'power2.inOut',
+        width: '140px',
+        duration: 1,
+        ease: 'expo.inOut',
     }, '-=0.3');
 
     // Hold then fade out
     preloaderTl.to('#preloader', {
         opacity: 0,
-        duration: 0.6,
-        delay: 0.5,
-        ease: 'power2.inOut',
+        duration: 0.8,
+        delay: 0.4,
+        ease: 'expo.inOut',
     });
 
     // Animate hero content in after preloader
     preloaderTl.from('.brand-name', {
         opacity: 0,
-        scale: 0.85,
-        duration: 1,
-        ease: 'power3.out',
-    }, '-=0.2');
+        scale: 0.9,
+        y: 30,
+        duration: 1.2,
+        ease: 'expo.out',
+    }, '-=0.3');
 
     preloaderTl.to('.tagline-word, .tagline-divider', {
         opacity: 1,
         y: 0,
-        duration: 0.5,
-        stagger: 0.06,
-        ease: 'power2.out',
-    }, '-=0.6');
+        duration: 0.6,
+        stagger: 0.05,
+        ease: 'power3.out',
+    }, '-=0.8');
 
-    // ========== CUSTOM CURSOR ==========
+    // ========== CUSTOM CURSOR (GSAP-driven for smoothness) ==========
     const cursorDot = document.getElementById('cursor-dot');
     const cursorOutline = document.getElementById('cursor-outline');
     const canvas = document.getElementById('cursor-canvas');
     const ctx = canvas ? canvas.getContext('2d') : null;
 
     let mouseX = -100, mouseY = -100;
-    let outlineX = -100, outlineY = -100;
     const particles = [];
 
     function resizeCanvas() {
@@ -100,32 +102,40 @@
         mouseX = e.clientX;
         mouseY = e.clientY;
 
+        // Use GSAP quickTo for silky smooth cursor movement
         if (cursorDot) {
-            cursorDot.style.left = mouseX + 'px';
-            cursorDot.style.top = mouseY + 'px';
+            gsap.to(cursorDot, {
+                left: mouseX,
+                top: mouseY,
+                duration: 0.1,
+                ease: 'power2.out',
+                overwrite: 'auto',
+            });
         }
 
-        // Add particle
-        if (particles.length < 30) {
+        // Add particle trail
+        if (particles.length < 25) {
             particles.push({
                 x: mouseX,
                 y: mouseY,
-                alpha: 0.6,
-                size: Math.random() * 3 + 1.5,
-                vx: (Math.random() - 0.5) * 1,
-                vy: (Math.random() - 0.5) * 1,
+                alpha: 0.5,
+                size: Math.random() * 2.5 + 1,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
             });
         }
     });
 
-    // Smooth outline following
+    // Smooth outline following with GSAP
     function animateCursor() {
-        outlineX += (mouseX - outlineX) * 0.12;
-        outlineY += (mouseY - outlineY) * 0.12;
-
         if (cursorOutline) {
-            cursorOutline.style.left = outlineX + 'px';
-            cursorOutline.style.top = outlineY + 'px';
+            gsap.to(cursorOutline, {
+                left: mouseX,
+                top: mouseY,
+                duration: 0.35,
+                ease: 'power3.out',
+                overwrite: 'auto',
+            });
         }
 
         // Draw canvas particles
@@ -134,8 +144,8 @@
 
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
-                p.alpha -= 0.015;
-                p.size *= 0.97;
+                p.alpha -= 0.012;
+                p.size *= 0.98;
                 p.x += p.vx;
                 p.y += p.vy;
 
@@ -146,7 +156,7 @@
 
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(212, 175, 55, ${p.alpha})`;
+                ctx.fillStyle = `rgba(229, 26, 34, ${p.alpha})`;
                 ctx.fill();
             }
         }
@@ -180,16 +190,20 @@
             const x = ((e.clientX - rect.left) / rect.width) * svgW;
             const y = ((e.clientY - rect.top) / rect.height) * svgH;
 
-            maskCircle.setAttribute('cx', x);
-            maskCircle.setAttribute('cy', y);
+            gsap.to(maskCircle, {
+                attr: { cx: x, cy: y },
+                duration: 0.3,
+                ease: 'power2.out',
+                overwrite: 'auto',
+            });
         });
 
         brandContainer.addEventListener('mouseenter', () => {
-            gsap.to(maskCircle, { attr: { r: 450 }, duration: 0.6, ease: 'power2.out' });
+            gsap.to(maskCircle, { attr: { r: 450 }, duration: 0.8, ease: 'expo.out' });
         });
 
         brandContainer.addEventListener('mouseleave', () => {
-            gsap.to(maskCircle, { attr: { r: 0 }, duration: 0.4, ease: 'power2.in' });
+            gsap.to(maskCircle, { attr: { r: 0 }, duration: 0.5, ease: 'expo.in' });
         });
     }
 
@@ -238,7 +252,7 @@
                     start: 'top top',
                     end: '+=250%',
                     pin: true,
-                    scrub: 1,
+                    scrub: 1.5,
                 }
             });
 
@@ -259,7 +273,7 @@
                     opacity: 0,
                     scale: 0.4,
                     duration: 1,
-                    ease: 'power2.in',
+                    ease: 'power3.inOut',
                 }, 0);
             });
 
@@ -280,7 +294,7 @@
                     opacity: 0,
                     scale: 0.5,
                     duration: 1,
-                    ease: 'power2.in',
+                    ease: 'power3.inOut',
                 }, 0.15);
             });
 
@@ -290,7 +304,7 @@
                 scale: 0.6,
                 y: (i) => i === 0 ? '-80%' : '80%',
                 duration: 1,
-                ease: 'power2.in',
+                ease: 'power3.inOut',
             }, 0.3);
 
             // Center scaler: zoom in
@@ -299,24 +313,36 @@
                 height: '100%',
                 borderRadius: '0px',
                 duration: 1.2,
-                ease: 'power2.out',
+                ease: 'expo.out',
             }, 0.5);
 
             tl.to('.scaler img', {
                 scale: 1,
                 duration: 1.2,
-                ease: 'power2.out',
+                ease: 'expo.out',
             }, 0.5);
         }
+
+        // --- Marquee: smooth parallax speed shift ---
+        gsap.to('.marquee-track', {
+            x: '-20%',
+            ease: 'none',
+            scrollTrigger: {
+                trigger: '.marquee-strip',
+                start: 'top bottom',
+                end: 'bottom top',
+                scrub: 2,
+            }
+        });
 
         // --- Product Cards: stagger reveal ---
         gsap.utils.toArray('.product-card').forEach((card, i) => {
             gsap.to(card, {
                 opacity: 1,
                 y: 0,
-                duration: 0.8,
-                delay: i * 0.1,
-                ease: 'power2.out',
+                duration: 1,
+                delay: i * 0.12,
+                ease: 'expo.out',
                 scrollTrigger: {
                     trigger: card,
                     start: 'top 85%',
@@ -328,9 +354,9 @@
         gsap.utils.toArray('.reveal-text').forEach((el) => {
             gsap.from(el, {
                 opacity: 0,
-                y: 50,
-                duration: 0.9,
-                ease: 'power3.out',
+                y: 60,
+                duration: 1.1,
+                ease: 'expo.out',
                 scrollTrigger: {
                     trigger: el,
                     start: 'top 85%',
@@ -348,7 +374,7 @@
                     trigger: '.story',
                     start: 'top bottom',
                     end: 'bottom top',
-                    scrub: 1,
+                    scrub: 1.5,
                 }
             });
         }
@@ -356,9 +382,9 @@
         // --- Story content: fade in ---
         gsap.from('.story-content', {
             opacity: 0,
-            x: -60,
-            duration: 1,
-            ease: 'power3.out',
+            x: -80,
+            duration: 1.2,
+            ease: 'expo.out',
             scrollTrigger: {
                 trigger: '.story',
                 start: 'top 70%',
@@ -367,9 +393,9 @@
 
         gsap.from('.story-image-wrap', {
             opacity: 0,
-            x: 60,
-            duration: 1,
-            ease: 'power3.out',
+            x: 80,
+            duration: 1.2,
+            ease: 'expo.out',
             scrollTrigger: {
                 trigger: '.story',
                 start: 'top 70%',
@@ -381,8 +407,8 @@
             const target = parseInt(num.getAttribute('data-target'));
             gsap.to(num, {
                 textContent: target,
-                duration: 2,
-                ease: 'power1.out',
+                duration: 2.5,
+                ease: 'power2.out',
                 snap: { textContent: 1 },
                 scrollTrigger: {
                     trigger: num,
@@ -394,9 +420,9 @@
         // --- CTA: slide in ---
         gsap.from('.cta-content', {
             opacity: 0,
-            y: 60,
-            duration: 1,
-            ease: 'power3.out',
+            y: 80,
+            duration: 1.2,
+            ease: 'expo.out',
             scrollTrigger: {
                 trigger: '.cta-section',
                 start: 'top 75%',
@@ -408,13 +434,26 @@
             gsap.from(label, {
                 opacity: 0,
                 y: 20,
-                duration: 0.6,
-                ease: 'power2.out',
+                duration: 0.7,
+                ease: 'power3.out',
                 scrollTrigger: {
                     trigger: label,
                     start: 'top 90%',
                 }
             });
+        });
+
+        // --- Footer: stagger columns ---
+        gsap.from('.footer-grid > div', {
+            opacity: 0,
+            y: 40,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: 'expo.out',
+            scrollTrigger: {
+                trigger: '#footer',
+                start: 'top 85%',
+            }
         });
     }
 
@@ -424,13 +463,23 @@
         ctaForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const btn = ctaForm.querySelector('.cta-btn');
-            btn.textContent = '✓ Subscribed';
-            btn.style.background = '#8DA9C4';
-            setTimeout(() => {
-                btn.textContent = 'Subscribe';
-                btn.style.background = '';
-                ctaForm.reset();
-            }, 2500);
+            gsap.to(btn, {
+                scale: 0.95,
+                duration: 0.1,
+                ease: 'power2.in',
+                onComplete: () => {
+                    btn.textContent = '✓ Subscribed';
+                    gsap.to(btn, {
+                        scale: 1,
+                        duration: 0.3,
+                        ease: 'elastic.out(1, 0.4)',
+                    });
+                    setTimeout(() => {
+                        btn.textContent = 'Subscribe';
+                        ctaForm.reset();
+                    }, 2500);
+                }
+            });
         });
     }
 
