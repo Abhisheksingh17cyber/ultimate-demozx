@@ -9,11 +9,11 @@
 
     // ========== LENIS SMOOTH SCROLL ==========
     const lenis = new Lenis({
-        duration: 1.8,
+        duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smooth: true,
         smoothWheel: true,
-        wheelMultiplier: 0.8,
+        wheelMultiplier: 1.0,
         touchMultiplier: 1.5,
         infinite: false,
     });
@@ -26,7 +26,6 @@
     gsap.ticker.add((time) => {
         lenis.raf(time * 1000);
     });
-    gsap.ticker.lagSmoothing(0);
 
     // ========== PRELOADER ==========
     const preloaderTl = gsap.timeline({
@@ -98,20 +97,23 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // GSAP quickSetter for GPU-accelerated cursor (uses transform instead of left/top)
+    const dotXSet = cursorDot ? gsap.quickSetter(cursorDot, 'x', 'px') : null;
+    const dotYSet = cursorDot ? gsap.quickSetter(cursorDot, 'y', 'px') : null;
+    let outlineTargetX = -100, outlineTargetY = -100;
+
     document.addEventListener('mousemove', (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
 
-        // Use GSAP quickTo for silky smooth cursor movement
-        if (cursorDot) {
-            gsap.to(cursorDot, {
-                left: mouseX,
-                top: mouseY,
-                duration: 0.1,
-                ease: 'power2.out',
-                overwrite: 'auto',
-            });
+        // Instant dot movement via transform (GPU-accelerated)
+        if (dotXSet && dotYSet) {
+            dotXSet(mouseX - 4);
+            dotYSet(mouseY - 4);
         }
+
+        outlineTargetX = mouseX - 18;
+        outlineTargetY = mouseY - 18;
 
         // Add particle trail
         if (particles.length < 25) {
@@ -126,16 +128,15 @@
         }
     });
 
-    // Smooth outline following with GSAP
+    // Smooth outline following via requestAnimationFrame + lerp (GPU-accelerated)
+    let currentOutlineX = -100, currentOutlineY = -100;
     function animateCursor() {
+        // Lerp the outline for ultra-smooth following
+        currentOutlineX += (outlineTargetX - currentOutlineX) * 0.12;
+        currentOutlineY += (outlineTargetY - currentOutlineY) * 0.12;
+
         if (cursorOutline) {
-            gsap.to(cursorOutline, {
-                left: mouseX,
-                top: mouseY,
-                duration: 0.35,
-                ease: 'power3.out',
-                overwrite: 'auto',
-            });
+            cursorOutline.style.transform = `translate3d(${currentOutlineX}px, ${currentOutlineY}px, 0)`;
         }
 
         // Draw canvas particles
@@ -252,7 +253,7 @@
                     start: 'top top',
                     end: '+=250%',
                     pin: true,
-                    scrub: 1.5,
+                    scrub: 0.8,
                 }
             });
 
